@@ -27,8 +27,8 @@ mod webgl;
 
 pub use api::{ApiMsg, IdNamespace, ResourceId, RenderApi, RenderApiSender, ScrollEventPhase};
 pub use display_list::{AuxiliaryLists, AuxiliaryListsBuilder, BuiltDisplayList};
-pub use display_list::{DisplayListBuilder, DisplayListItem, IframeInfo, ItemRange};
-pub use display_list::{SpecificDisplayListItem};
+pub use display_list::{BuiltDisplayListRef, DisplayListBuilder, DisplayListItem, IframeInfo};
+pub use display_list::{ItemRange, SpecificDisplayListItem};
 pub use display_item::{DisplayItem, SpecificDisplayItem, ImageDisplayItem};
 pub use display_item::{BorderDisplayItem, GradientDisplayItem, RectangleDisplayItem};
 pub use stacking_context::StackingContext;
