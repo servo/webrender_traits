@@ -11,6 +11,7 @@ use core::nonzero::NonZero;
 use euclid::{Matrix4, Point2D, Rect, Size2D};
 use ipc_channel::ipc::{IpcBytesSender, IpcSender};
 use offscreen_gl_context::{GLContextAttributes, GLLimits};
+use uuid::Uuid;
 
 #[cfg(target_os = "macos")] use core_graphics::font::CGFont;
 
@@ -44,7 +45,6 @@ pub enum ApiMsg {
     SetRootPipeline(PipelineId),
     Scroll(Point2D<f32>, Point2D<f32>, ScrollEventPhase),
     TickScrollingBounce,
-    TranslatePointToLayerSpace(Point2D<f32>, IpcSender<(Point2D<f32>, PipelineId)>),
     GetScrollLayerState(IpcSender<Vec<ScrollLayerState>>),
     RequestWebGLContext(Size2D<i32>, GLContextAttributes, IpcSender<Result<(WebGLContextId, GLLimits), String>>),
     WebGLCommand(WebGLContextId, WebGLCommand),
@@ -313,7 +313,9 @@ pub type NativeFontHandle = CGFont;
 pub struct NativeFontHandle;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct PipelineId(pub u32, pub u32);
+pub struct PipelineId {
+    pub id: Uuid,
+}
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct RectangleDisplayItem {
