@@ -100,6 +100,42 @@ impl BuiltDisplayList {
     }
 }
 
+/// A reference to a display list.
+#[derive(Clone)]
+pub struct BuiltDisplayListRef<'a> {
+    data: &'a [u8],
+    descriptor: BuiltDisplayListDescriptor,
+}
+
+impl<'a> BuiltDisplayListRef<'a> {
+    pub fn from_data(data: &[u8], descriptor: BuiltDisplayListDescriptor) -> BuiltDisplayListRef {
+        BuiltDisplayListRef {
+            data: data,
+            descriptor: descriptor,
+        }
+    }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data[..]
+    }
+
+    pub fn descriptor(&self) -> &BuiltDisplayListDescriptor {
+        &self.descriptor
+    }
+
+    pub fn display_list_items(&self) -> &'a [DisplayListItem] {
+        unsafe {
+            convert_blob_to_pod(&self.data[0..self.descriptor.display_list_items_size])
+        }
+    }
+
+    pub fn display_items(&self, range: &ItemRange) -> &'a [DisplayItem] {
+        unsafe {
+            range.get(convert_blob_to_pod(&self.data[self.descriptor.display_list_items_size..]))
+        }
+    }
+}
+
 pub struct DisplayListBuilder {
     pub mode: DisplayListMode,
     pub has_stacking_contexts: bool,
@@ -459,6 +495,7 @@ impl AuxiliaryListsBuilder {
 
             AuxiliaryLists {
                 data: blob,
+                data_offset: 0,
                 descriptor: AuxiliaryListsDescriptor {
                     gradient_stops_size: gradient_stops_size,
                     complex_clip_regions_size: complex_clip_regions_size,
@@ -494,14 +531,17 @@ pub struct AuxiliaryLists {
     /// The concatenation of: gradient stops, complex clip regions, filters, and glyph instances,
     /// in that order.
     data: Vec<u8>,
+    data_offset: usize,
     descriptor: AuxiliaryListsDescriptor,
 }
 
 impl AuxiliaryLists {
     /// Creates a new `AuxiliaryLists` instance from a descriptor and data received over a channel.
-    pub fn from_data(data: Vec<u8>, descriptor: AuxiliaryListsDescriptor) -> AuxiliaryLists {
+    pub fn from_data(data: Vec<u8>, data_offset: usize, descriptor: AuxiliaryListsDescriptor)
+                     -> AuxiliaryLists {
         AuxiliaryLists {
             data: data,
+            data_offset: data_offset,
             descriptor: descriptor,
         }
     }
@@ -517,15 +557,16 @@ impl AuxiliaryLists {
     /// Returns the gradient stops described by `gradient_stops_range`.
     pub fn gradient_stops(&self, gradient_stops_range: &ItemRange) -> &[GradientStop] {
         unsafe {
-            let end = self.descriptor.gradient_stops_size;
-            gradient_stops_range.get(convert_blob_to_pod(&self.data[0..end]))
+            let start = self.data_offset;
+            let end = start + self.descriptor.gradient_stops_size;
+            gradient_stops_range.get(convert_blob_to_pod(&self.data[start..end]))
         }
     }
 
     /// Returns the complex clipping regions described by `complex_clip_regions_range`.
     pub fn complex_clip_regions(&self, complex_clip_regions_range: &ItemRange)
                                 -> &[ComplexClipRegion] {
-        let start = self.descriptor.gradient_stops_size;
+        let start = self.data_offset + self.descriptor.gradient_stops_size;
         let end = start + self.descriptor.complex_clip_regions_size;
         unsafe {
             complex_clip_regions_range.get(convert_blob_to_pod(&self.data[start..end]))
@@ -534,7 +575,8 @@ impl AuxiliaryLists {
 
     /// Returns the filters described by `filters_range`.
     pub fn filters(&self, filters_range: &ItemRange) -> &[FilterOp] {
-        let start = self.descriptor.gradient_stops_size +
+        let start = self.data_offset +
+            self.descriptor.gradient_stops_size +
             self.descriptor.complex_clip_regions_size;
         let end = start + self.descriptor.filters_size;
         unsafe {
@@ -544,8 +586,10 @@ impl AuxiliaryLists {
 
     /// Returns the glyph instances described by `glyph_instances_range`.
     pub fn glyph_instances(&self, glyph_instances_range: &ItemRange) -> &[GlyphInstance] {
-        let start = self.descriptor.gradient_stops_size +
-            self.descriptor.complex_clip_regions_size + self.descriptor.filters_size;
+        let start = self.data_offset +
+            self.descriptor.gradient_stops_size +
+            self.descriptor.complex_clip_regions_size +
+            self.descriptor.filters_size;
         unsafe {
             glyph_instances_range.get(convert_blob_to_pod(&self.data[start..]))
         }
