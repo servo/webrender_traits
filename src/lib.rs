@@ -16,6 +16,7 @@ extern crate heapsize;
 extern crate ipc_channel;
 extern crate offscreen_gl_context;
 extern crate serde;
+extern crate uuid;
 
 #[cfg(target_os = "macos")] extern crate core_graphics;
 
