@@ -4,7 +4,7 @@
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use euclid::{Point2D, Size2D};
-use ipc_channel::ipc::{self, IpcBytesSender, IpcSender};
+use ipc_channel::ipc::{self, IpcBytesSender, IpcSender, IpcSharedMemory};
 use offscreen_gl_context::{GLContextAttributes, GLLimits};
 use std::cell::Cell;
 use {ApiMsg, AuxiliaryLists, BuiltDisplayList, ColorF, DisplayListId, Epoch};
@@ -51,7 +51,7 @@ impl RenderApi {
         RenderApiSender::new(self.api_sender.clone(), self.payload_sender.clone())
     }
 
-    pub fn add_raw_font(&self, bytes: Vec<u8>) -> FontKey {
+    pub fn add_raw_font(&self, bytes: IpcSharedMemory) -> FontKey {
         let new_id = self.next_unique_id();
         let key = FontKey::new(new_id.0, new_id.1);
         let msg = ApiMsg::AddRawFont(key, bytes);
