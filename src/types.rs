@@ -9,14 +9,14 @@ use app_units::Au;
 #[cfg(feature = "nightly")]
 use core::nonzero::NonZero;
 use euclid::{Matrix4D, Point2D, Rect, Size2D};
-use ipc_channel::ipc::{IpcBytesSender, IpcSender};
+use ipc_channel::ipc::{IpcBytesSender, IpcSender, IpcSharedMemory};
 use offscreen_gl_context::{GLContextAttributes, GLLimits};
 
 #[cfg(target_os = "macos")] use core_graphics::font::CGFont;
 
 #[derive(Deserialize, Serialize)]
 pub enum ApiMsg {
-    AddRawFont(FontKey, Vec<u8>),
+    AddRawFont(FontKey, IpcSharedMemory),
     AddNativeFont(FontKey, NativeFontHandle),
     /// Adds an image from the resource cache.
     AddImage(ImageKey, u32, u32, ImageFormat, Vec<u8>),
